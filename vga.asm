@@ -1,4 +1,4 @@
-; [ORG 0x7C00]
+[ORG 0x7C00]
 [BITS 16]
 
 %define WIDTH 320
@@ -8,13 +8,68 @@
 %define stack2(i) ss:[esp + 2 * i]
 %define stack4(i) ss:[esp + 4 * i]
 
-push 100 ; y-offset
-push 50 ; x-offset
-push 320
-push 100 ; height
-push 100 ; width
-push 0x0c
-call fill
+mov ax, 0x0013
+int 0x10
+
+xor ax, ax
+mov es, ax
+mov dword [es:0x0070], draw_frame
+
+jmp $
+
+draw_frame:
+    pusha
+    push VGA
+    pop es
+    call draw
+    ; mov esp, [stack]
+
+    ; add word [pos_x], 100
+    ; add word [pos_y], 100
+    ; add byte [color], 1
+    ; push word [pos_x] ; y-offset
+    ; push word [pos_y] ; x-offset
+    ; push 320
+    ; push 50 ; height
+    ; push 50 ; width
+    ; push word [color]
+    ; call fill
+    ; sub esp, 2 * 6
+
+    popa
+    iret
+
+draw:
+    inc word [color]
+    mov [stack], esp
+    push word [color]
+    ; sub esp, 2
+    ; sub esp, 4
+    ; push x
+    ; mov [color], word 0x0f
+    ; mov cx, 0x0b
+    call clear_screen
+    mov esp, [stack]
+    ret
+
+; main_loop:
+;     mov stack2(5), word 0
+;     add stack2(4), word 1
+;     cmp stack2(4), word 270
+    
+;     jb .continue
+;     mov stack2(4), word 0
+;     ; mov stack2(5), word 100
+;     ; mov stack2(4), word 100
+; .continue:
+;     mov stack2(3), word 320
+;     mov stack2(2), word 50
+;     mov stack2(1), word 50
+;     mov stack2(0), word 0x0c
+;     call fill
+
+;     ; call clear_screen
+;     jmp main_loop
 
 jmp $
 
@@ -25,11 +80,6 @@ jmp $
 ; stack[4] = x-offset
 ; stack[5] = y-offset
 fill:
-    mov ax, 0x0013
-    int 0x10
-    push VGA
-    pop es
-
     mov di, stack2(6)
     mov ax, stack2(4)
     mul di
@@ -50,7 +100,7 @@ fill:
 
     inc di
     cmp di, stack2(3)
-    ja .out
+    jae .out
 
     add bx, stack2(4)
     mov ax, 0
@@ -58,5 +108,28 @@ fill:
 .out:
     ret
 
+; stack[0] = color
+clear_screen:
+    mov bx, 0
+.iter:
+    mov cl, byte stack2(1)
+    mov byte [es:bx], cl
+    inc bx
+    cmp bx, WIDTH * HEIGHT
+    jb .iter
+    ret
+    ; push 0 ; y-offset
+    ; push 0 ; x-offset
+    ; push 320
+    ; push 100 ; height
+    ; push 100 ; width
+    ; push 0x0d
+    ; call fill
+    ; ret
+
+pos_x: dw 0
+pos_y: dw 0
+color: dw 0x00
+stack: dw 0
 times 510 - ($ - $$) db 0
 dw 0xaa55
