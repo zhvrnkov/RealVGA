@@ -13,42 +13,35 @@ int 0x10
 
 xor ax, ax
 mov es, ax
-mov dword [es:0x0070], draw_frame
+mov dword [es:0x0070], main_loop
 
 jmp $
 
-draw_frame:
+main_loop:
     pusha
     push VGA
     pop es
-    call draw
-    ; mov esp, [stack]
 
-    ; add word [pos_x], 100
-    ; add word [pos_y], 100
-    ; add byte [color], 1
-    ; push word [pos_x] ; y-offset
-    ; push word [pos_y] ; x-offset
-    ; push 320
-    ; push 50 ; height
-    ; push 50 ; width
-    ; push word [color]
-    ; call fill
-    ; sub esp, 2 * 6
+    call draw_frame
 
     popa
     iret
 
-draw:
-    inc word [color]
+draw_frame:
     mov [stack], esp
-    push word [color]
-    ; sub esp, 2
-    ; sub esp, 4
-    ; push x
-    ; mov [color], word 0x0f
-    ; mov cx, 0x0b
+
     call clear_screen
+
+    inc word [pos_x]
+    inc word [pos_y]
+    push word [pos_x] ; y-offset
+    push word [pos_y] ; x-offset
+    push 320
+    push 50 ; height
+    push 50 ; width
+    push 0x04
+    call fill
+
     mov esp, [stack]
     ret
 
@@ -108,12 +101,10 @@ fill:
 .out:
     ret
 
-; stack[0] = color
 clear_screen:
     mov bx, 0
 .iter:
-    mov cl, byte stack2(1)
-    mov byte [es:bx], cl
+    mov byte [es:bx], 0x00
     inc bx
     cmp bx, WIDTH * HEIGHT
     jb .iter
