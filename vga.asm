@@ -1,9 +1,13 @@
 [ORG 0x7C00]
 [BITS 16]
 
+%define VGA 0xA000
 %define WIDTH 320
 %define HEIGHT 200
-%define VGA 0xA000
+%define RECT_WIDTH 50
+%define RECT_HEIGHT 50
+%define RECT_INIT_DX 5
+%define RECT_INIT_DY 5
 %define stack1(i) ss:[esp + i]
 %define stack2(i) ss:[esp + 2 * i]
 %define stack4(i) ss:[esp + 4 * i]
@@ -32,13 +36,35 @@ draw_frame:
 
     call clear_screen
 
-    inc word [pos_x]
-    inc word [pos_y]
+    mov ax, [pos_dx]
+    add word [pos_x], ax
+
+    cmp word [pos_x], HEIGHT - RECT_HEIGHT
+    jb .c1
+    neg word [pos_dx]
+.c1:
+    cmp word [pos_x], 0
+    ja .c2
+    neg word [pos_dx]
+.c2:
+
+    mov ax, [pos_dy]
+    add word [pos_y], ax
+
+    cmp word [pos_y], WIDTH - RECT_WIDTH
+    jb .c3
+    neg word [pos_dy]
+.c3:
+    cmp word [pos_y], 0
+    ja .c4
+    neg word [pos_dy]
+.c4:
+
     push word [pos_x] ; y-offset
     push word [pos_y] ; x-offset
     push 320
-    push 50 ; height
-    push 50 ; width
+    push RECT_WIDTH ; height
+    push RECT_HEIGHT ; width
     push 0x04
     call fill
 
@@ -118,6 +144,8 @@ clear_screen:
     ; call fill
     ; ret
 
+pos_dx: dw RECT_INIT_DX 
+pos_dy: dw RECT_INIT_DY
 pos_x: dw 0
 pos_y: dw 0
 color: dw 0x00
