@@ -58,6 +58,7 @@ print_int_loop:
 
   cmp cx, 0
   ja print_int_loop
+  ret
 
 
 
